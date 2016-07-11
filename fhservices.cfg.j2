@@ -1,0 +1,110 @@
+# Check that a component responds to a /sys/info/ping over HTTP
+define command {
+       command_name   check_fh_component_http_ping
+       command_line   $USER1$/check_http -H $ARG1$ -u /sys/info/ping -p 8080
+}
+
+# Check that a component responds to a /sys/info/health over HTTP
+define command {
+       command_name   check_fh_component_http_health
+       command_line   $USER1$/check_http -H $ARG1$ -u /sys/info/health -p 8080
+}
+
+define command {
+       command_name   check_nagios_host
+       command_line   $USER1$/check_http -H $HOSTADDRESS$ -S
+}
+
+define command {
+  command_name   check_mongodb
+  command_line   /opt/rhmap/nagios/plugins/check_mongodb_wrapper.sh -A $ARG1$ -S $ARG2$ -w $ARG3$ -c $ARG4$
+}
+
+define command {
+  command_name   check_pod_disk_usage
+  command_line   /opt/rhmap/nagios/plugins/check_pod_disk_usage.sh -m $ARG1$ -w $ARG2$ -c $ARG3$
+}  
+
+define contact {
+       contact_name   coreadmin
+       use            generic-contact
+       alias          Core Admin
+       email          {{ core_admin_email }}
+}
+
+define contactgroup {
+       contactgroup_name  coreadmins
+       alias              Core Administrators
+       members            coreadmin
+}
+
+# Host template
+define host {
+	name				fh-component-container
+	use				generic-host
+	check_period			24x7
+	check_interval		5
+	retry_interval		1
+	max_check_attempts		10
+       check_command           	check_nagios_host
+	notification_period		workhours
+	notification_interval	120
+	notification_options		d,u,r
+	contact_groups		coreadmins
+	register			0
+}
+
+# This is a dummy host really, just so the host doesn't go red
+define host {
+       use fh-component-container
+       address {{ core_router_dns }}
+       host_name {{ core_router_dns }}
+}
+
+{% for fhservice in fh_services_ping %}
+define service {
+       service_description Service::{{ fhservice }}::Ping
+       hosts {{ core_router_dns }}
+       check_command check_fh_component_http_ping!{{ fhservice }}
+       use generic-service
+
+       notes This server cannot access {{ fhservice }}, check it is running and that this server is able to talk to it on port 8080
+       contact_groups coreadmins
+}
+{% endfor %}
+
+{% for fhservice in fh_services_health %}
+define service {
+       service_description Service::{{ fhservice }}::Health
+       hosts {{ core_router_dns }}
+       check_command check_fh_component_http_health!{{ fhservice }}
+       use generic-service
+
+       notes This server failed to get a successful response from the {{ fhservice }} health endpoint. Check the response code & body and ensure the service and its dependencies are running and configured correctly.
+       contact_groups coreadmins
+}
+{% endfor %}
+
+{% for mongochk in ['connect','replset_state'] %}
+define service {
+       service_description Database::MongoDB::{{ mongochk | capitalize() }}
+       hosts {{ core_router_dns }}
+       check_command check_mongodb!{{ mongochk }}!mongodb-service-1!0!0
+       use generic-service
+
+       notes This server failed to get a successful response from the {{ mongochk }} . Check that the mongo pods are running and replicating successfully.
+       contact_groups coreadmins
+}
+{% endfor %}
+
+{% for chk in ['usage','inodes'] %}
+define service {
+       service_description Storage::Pod::Disk {{ chk | capitalize() }}
+       hosts {{ core_router_dns }}
+       check_command check_pod_disk_usage!{{ chk }}!80!90
+       use generic-service
+
+       notes One or more pods have volumes which are running out of disk {{ chk }}.  You should clean up the files on this pod, if possible, or scale down/up the pod so that it has a fresh filesystem.
+       contact_groups coreadmins
+}
+{% endfor %}

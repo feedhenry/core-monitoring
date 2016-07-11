@@ -1,2 +1,4 @@
-# core-monitoring
-RHMAP Core Monitoring 
+## Core Monitoring
+This project contains the resources to build Nagios DockerImage.
+
+### Building

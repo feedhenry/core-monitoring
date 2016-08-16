@@ -79,26 +79,40 @@ define host {
        hostgroups {{ rhmap_hostgroups }}
 }
 
-{% for fhservice in fh_services if 'ping' in fhservice['checks'] %}
-define service {
-       service_description {{ fhservice['name'] }}::Ping
-       check_command check_fh_component_http_ping!{{ fhservice['name'] }}!{{ fhservice.get("port", "8080") }}!{{ fhservice.get("ping_endpoint", "/sys/info/ping") }}
-       use generic-service
-       hostgroup_name {{ ",".join(fhservice['hostgroups']) }}
-       notes This server cannot access {{ fhservice['name'] }}, check it is running and that this server is able to talk to it on port 8080
-       contact_groups rhmapadmins
-}
-{% endfor %}
+{% for hostgroup in rhmap_hostgroups.split(',') %}
+  {% for fhservice in fh_services if 'ping' in fhservice['checks'] %}
+    {% for servicehostgroup in fhservice['hostgroups'] %}
+    define service {
+           service_description {{ hostgroup }}::{{ fhservice['name'] }}::Ping
+           {% if hostgroup == 'core' %}
+           check_command check_fh_component_http_ping!{{ fhservice['name'] }}!{{ fhservice.get("port", "8080") }}!{{ fhservice.get("ping_endpoint", "/sys/info/ping") }}
+           {% elif hostgroup == 'mbaas' %}
+           check_command check_fh_component_http_ping!{{ fhservice['name'] }}-service!{{ fhservice.get("port", "8080") }}!{{ fhservice.get("ping_endpoint", "/sys/info/ping") }}
+           {% endif %}
+           use generic-service
+           hostgroup_name {{ servicehostgroup }}
+           notes This server cannot access {{ fhservice['name'] }}, check it is running and that this server is able to talk to it on port 8080
+           contact_groups rhmapadmins
+    }
+    {% endfor %}
+  {% endfor %}
 
-{% for fhservice in fh_services if 'health' in fhservice['checks'] %}
-define service {
-       service_description {{ fhservice['name'] }}::Health
-       check_command check_fh_component_health!{{ fhservice['name'] }}!{{ fhservice.get("port", "8080") }}!{{ fhservice.get("health_endpoint", "/sys/info/health") }}
-       use generic-service
-       hostgroup_name {{ ",".join(fhservice['hostgroups']) }}
-       notes This server failed to get a successful response from the {{ fhservice['name'] }} health endpoint. Check the response code & body and ensure the service and its dependencies are running and configured correctly.
-       contact_groups rhmapadmins
-}
+  {% for fhservice in fh_services if 'health' in fhservice['checks'] %}
+    {% for servicehostgroup in fhservice['hostgroups'] %}
+    define service {
+           service_description {{ hostgroup }}::{{ fhservice['name'] }}::Health
+           {% if hostgroup == 'core' %}
+           check_command check_fh_component_health!{{ fhservice['name'] }}!{{ fhservice.get("port", "8080") }}!{{ fhservice.get("health_endpoint", "/sys/info/health") }}
+           {% elif hostgroup == 'mbaas' %}
+           check_command check_fh_component_health!{{ fhservice['name'] }}-service!{{ fhservice.get("port", "8080") }}!{{ fhservice.get("health_endpoint", "/sys/info/health") }}
+           {% endif %}
+           use generic-service
+           hostgroup_name {{ servicehostgroup }}
+           notes This server failed to get a successful response from the {{ fhservice['name'] }} health endpoint. Check the response code & body and ensure the service and its dependencies are running and configured correctly.
+           contact_groups rhmapadmins
+    }
+    {% endfor %}
+  {% endfor %}
 {% endfor %}
 
 define service {

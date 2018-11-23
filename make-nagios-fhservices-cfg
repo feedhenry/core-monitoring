@@ -92,10 +92,7 @@ j2renderedouput = j2template.render(fh_services=fh_services,
                                     jenkins_user=jenkins_user,
                                     jenkins_pass=jenkins_pass,
                                     check_android=check_android,
-                                    check_mac=check_mac,
-                                    userdata_project_name=userdata_project_name,
-                                    userdata_mongodb_services=userdata_mongodb_services,
-                                    userdata_mongodb_instances=userdata_mongodb_count)
+                                    check_mac=check_mac)
 
 with open(nagios_config_filename, 'wb') as nagios_config_file:
     nagios_config_file.write(j2renderedouput)

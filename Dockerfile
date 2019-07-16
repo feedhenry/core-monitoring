@@ -29,5 +29,6 @@ COPY plugins/default/ /opt/rhmap/nagios/plugins/
 COPY scripts/ /opt/rhmap/
 RUN chmod -R 755 /opt/rhmap/nagios/plugins/
 COPY start /start
+COPY snmp-scripts /usr/local/bin/
 
 CMD ["/start"]

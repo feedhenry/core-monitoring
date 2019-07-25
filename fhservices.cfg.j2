@@ -123,7 +123,7 @@ define contact {
 define contactgroup {
        contactgroup_name  rhmapadmins
        alias              RHMAP Administrators
-       members            rhmapadmin
+       members            rhmapadmin, managementstation
 }
 
 define hostgroup {
@@ -362,3 +362,26 @@ define service {
        notes One or more containers has no limit set for CPU and/or Memory.
        contact_groups rhmapadmins
 }
+
+# 'send-service-trap' command definition
+define command{
+      command_name send-service-trap
+      command_line /usr/local/bin/send-service-trap manager public "$HOSTNAME$" "$SERVICEDESC$" $SERVICESTATEID$ "$SERVICEOUTPUT$"
+}
+
+# 'send-host-trap' command definition
+define command{
+                command_name send-host-trap
+                command_line /usr/local/bin/send-host-trap manager public "$HOSTNAME$" $HOSTSTATEID$ "$HOSTOUTPUT$"
+}
+
+define contact{
+        contact_name                             managementstation
+        use                                              generic-contact
+        alias                                            Management Station
+        service_notification_options    w,u,c,r
+        host_notification_options         d,u,r
+        service_notification_commands   send-service-trap
+        host_notification_commands      send-host-trap
+        }
+

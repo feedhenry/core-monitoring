@@ -1,4 +1,3 @@
-===/usr/local/bin/send-host-trap=======
 # Arguments:
 # $1 = Management Station
 # $2 = Community String
@@ -7,4 +6,4 @@
 # $5 = HOSTOUTPUT The first line of text output from the last host check (i.e. "Ping OK").
 #
 #
-/usr/bin/snmptrap -v 2c -c $2 $1 '' NAGIOS-NOTIFY-MIB::nHostEvent nHostname s "$3" nHostStateID i $4 nHostOutput s "$5"
+/usr/bin/snmptrap -v 2c -c $2 $SNMP_MANAGER '' NAGIOS-NOTIFY-MIB::nHostEvent nHostname s "$3" nHostStateID i $4 nHostOutput s "$5"

@@ -1,4 +1,3 @@
-===/usr/local/bin/send-service-trap ====
 # Arguments:
 # $1 = Management Station
 # $2 = Community String
@@ -11,4 +10,4 @@
 #       as the plugin output for the service check)
 #
 #
-/usr/bin/snmptrap -v 2c -c $2 $1 '' NAGIOS-NOTIFY-MIB::nSvcEvent nSvcHostname s "$3" nSvcDesc s "$4" nSvcStateID i $5 nSvcOutput s "$6"
+/usr/bin/snmptrap -v 2c -c $2 $SNMP_MANAGER '' NAGIOS-NOTIFY-MIB::nSvcEvent nSvcHostname s "$3" nSvcDesc s "$4" nSvcStateID i $5 nSvcOutput s "$6"
